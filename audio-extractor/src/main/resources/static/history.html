@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vezilka — History</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, sans-serif;
+            background: #F5F0E8;
+            color: #1A1A1A;
+            min-height: 100vh;
+            padding: 80px 40px 48px;
+        }
+        .container { max-width: 720px; margin: 0 auto; }
+        .wordmark {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 0.8rem;
+            font-variant: small-caps;
+            letter-spacing: 0.2em;
+            color: #1A1A1A;
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 48px;
+        }
+        .page-header a { color: #1B3F8B; text-decoration: none; font-size: 0.85rem; }
+        .page-header a:hover { text-decoration: underline; }
+        .search-wrap {
+            margin-bottom: 32px;
+            border-bottom: 1px solid #1A1A1A;
+            padding-bottom: 8px;
+        }
+        #search {
+            width: 100%;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-family: system-ui, sans-serif;
+            font-size: 0.9rem;
+            color: #1A1A1A;
+            caret-color: #1B3F8B;
+        }
+        #search::placeholder { color: #9A9A9A; }
+        .recording-row { border-top: 1px solid #1A1A1A; }
+        #list > .recording-row:last-child { border-bottom: 1px solid #1A1A1A; }
+        .row-header {
+            display: grid;
+            grid-template-columns: 130px 1fr auto;
+            gap: 24px;
+            align-items: center;
+            padding: 16px 0;
+            cursor: pointer;
+            position: relative;
+        }
+        .row-date {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.73rem;
+            color: #9A9A9A;
+        }
+        .row-filename {
+            font-size: 0.8rem;
+            font-variant: small-caps;
+            letter-spacing: 0.08em;
+            color: #1A1A1A;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .row-preview {
+            font-size: 0.8rem;
+            color: #9A9A9A;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: right;
+        }
+        .btn-delete {
+            display: none;
+            background: none;
+            border: none;
+            color: #9A9A9A;
+            cursor: pointer;
+            font-size: 1.1rem;
+            line-height: 1;
+            padding: 0;
+            position: absolute;
+            right: 0;
+        }
+        .btn-delete:hover { color: #C0392B; }
+        .row-header:hover .btn-delete { display: block; }
+        .row-header:hover .row-preview { visibility: hidden; }
+        .row-detail { display: none; padding: 0 0 24px; }
+        .row-detail.open { display: block; }
+        .section-heading {
+            font-size: 0.68rem;
+            font-variant: small-caps;
+            letter-spacing: 0.15em;
+            color: #9A9A9A;
+            margin-bottom: 10px;
+            margin-top: 20px;
+        }
+        .transcription-text {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.8;
+            color: #4A4A4A;
+        }
+        .kv-pair {
+            display: flex;
+            gap: 12px;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.82rem;
+            line-height: 1.7;
+        }
+        .kv-key { color: #9A9A9A; white-space: nowrap; flex-shrink: 0; }
+        .kv-sep { color: #9A9A9A; }
+        .kv-val { color: #1A1A1A; word-break: break-word; }
+        .empty {
+            text-align: center;
+            color: #9A9A9A;
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 1rem;
+            padding: 80px 0;
+        }
+        .load-error { color: #C0392B; font-size: 0.85rem; padding: 48px 0; text-align: center; }
+        .action-row { display: flex; gap: 8px; margin: 8px 0 12px; }
+        .action-btn {
+            font-size: 0.65rem;
+            font-family: system-ui;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            color: #1B3F8B;
+            border: 1px solid #1B3F8B;
+            padding: 5px 12px;
+            cursor: pointer;
+            background: transparent;
+            border-radius: 0;
+        }
+        .action-btn:hover { background: #1B3F8B; color: #F5F0E8; }
+        .action-btn:disabled { border-color: #9A9A9A; color: #9A9A9A; cursor: not-allowed; background: transparent; }
+        .vocab-section { margin-bottom: 40px; }
+        .vocab-heading { font-size: 0.68rem; font-variant: small-caps; letter-spacing: 0.15em; color: #9A9A9A; margin-bottom: 12px; }
+        .vocab-input-row { display: flex; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid #1A1A1A; padding-bottom: 8px; }
+        #vocabInput {
+            flex: 1; background: transparent; border: none; outline: none;
+            font-family: system-ui, sans-serif; font-size: 0.9rem; color: #1A1A1A; caret-color: #1B3F8B;
+        }
+        #vocabInput::placeholder { color: #9A9A9A; }
+        #vocabAddBtn {
+            font-size: 0.65rem; font-family: system-ui; font-weight: 600; letter-spacing: 0.08em;
+            color: #1B3F8B; border: 1px solid #1B3F8B; padding: 4px 12px;
+            cursor: pointer; background: transparent; border-radius: 0;
+        }
+        #vocabAddBtn:hover { background: #1B3F8B; color: #F5F0E8; }
+        .vocab-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .vocab-tag {
+            display: flex; align-items: center; gap: 6px;
+            font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.72rem;
+            color: #1A1A1A; border: 1px solid #DDD8CC; padding: 3px 8px;
+        }
+        .vocab-tag-remove { background: none; border: none; color: #9A9A9A; cursor: pointer; font-size: 1rem; line-height: 1; padding: 0; }
+        .vocab-tag-remove:hover { color: #C0392B; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="page-header">
+        <div class="wordmark">Vezilka</div>
+        <a href="/">← Record</a>
+    </div>
+    <div class="vocab-section">
+        <div class="vocab-heading">Custom Vocabulary</div>
+        <div class="vocab-input-row">
+            <input type="text" id="vocabInput" placeholder="Add a word...">
+            <button id="vocabAddBtn">Add</button>
+        </div>
+        <div class="vocab-tags" id="vocabTags"></div>
+    </div>
+    <div class="search-wrap">
+        <input type="text" id="search" placeholder="Search...">
+    </div>
+    <div id="list"></div>
+</div>
+
+<script>
+    // Vocabulary
+    async function loadVocab() {
+        const tags = document.getElementById('vocabTags');
+        const words = await fetch('/api/vocabulary').then(r => r.json());
+        tags.innerHTML = '';
+        words.forEach(w => tags.appendChild(buildTag(w)));
+    }
+
+    function buildTag(w) {
+        const tag = document.createElement('div');
+        tag.className = 'vocab-tag';
+        const label = document.createElement('span');
+        label.textContent = w.word;
+        const btn = document.createElement('button');
+        btn.className = 'vocab-tag-remove';
+        btn.textContent = '×';
+        btn.addEventListener('click', async () => {
+            await fetch('/api/vocabulary/' + w.id, { method: 'DELETE' });
+            loadVocab();
+        });
+        tag.appendChild(label);
+        tag.appendChild(btn);
+        return tag;
+    }
+
+    document.getElementById('vocabAddBtn').addEventListener('click', async () => {
+        const input = document.getElementById('vocabInput');
+        const word = input.value.trim();
+        if (!word) return;
+        await fetch('/api/vocabulary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ word })
+        });
+        input.value = '';
+        loadVocab();
+    });
+
+    document.getElementById('vocabInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') document.getElementById('vocabAddBtn').click();
+    });
+
+    loadVocab();
+
+    let allRecordings = [];
+
+    function formatDate(iso) {
+        const d = new Date(iso);
+        if (isNaN(d)) return '—';
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function renderKV(obj, parent) {
+        parent.innerHTML = '';
+        Object.entries(obj).forEach(([k, v]) => {
+            const pair = document.createElement('div');
+            pair.className = 'kv-pair';
+            const key = document.createElement('span');
+            key.className = 'kv-key';
+            key.textContent = k.replace(/_/g, ' ');
+            const sep = document.createElement('span');
+            sep.className = 'kv-sep';
+            sep.textContent = '—';
+            const val = document.createElement('span');
+            val.className = 'kv-val';
+            val.textContent = typeof v === 'object' ? JSON.stringify(v) : v;
+            pair.appendChild(key);
+            pair.appendChild(sep);
+            pair.appendChild(val);
+            parent.appendChild(pair);
+        });
+    }
+
+    async function flashBtn(b, text) {
+        const orig = b.textContent;
+        b.textContent = text;
+        b.disabled = true;
+        await new Promise(r => setTimeout(r, 1500));
+        b.textContent = orig;
+        b.disabled = false;
+    }
+
+    async function downloadAudio(id, filename) {
+        const res = await fetch('/api/recordings/' + id + '/audio');
+        if (!res.ok) throw new Error(res.status);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename || 'recording'; a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function buildRow(r) {
+        const row = document.createElement('div');
+        row.className = 'recording-row';
+        row.dataset.transcription = (r.transcription || '').toLowerCase();
+
+        const header = document.createElement('div');
+        header.className = 'row-header';
+
+        const dateEl = document.createElement('span');
+        dateEl.className = 'row-date';
+        dateEl.textContent = formatDate(r.createdAt);
+
+        const filenameEl = document.createElement('span');
+        filenameEl.className = 'row-filename';
+        filenameEl.textContent = r.originalFilename || 'recording';
+
+        const previewEl = document.createElement('span');
+        previewEl.className = 'row-preview';
+        previewEl.textContent = (r.transcription || '').slice(0, 80) || '(no transcription)';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn-delete';
+        deleteBtn.dataset.id = r.id;
+        deleteBtn.textContent = '×';
+
+        header.appendChild(dateEl);
+        header.appendChild(filenameEl);
+        header.appendChild(previewEl);
+        header.appendChild(deleteBtn);
+
+        const detail = document.createElement('div');
+        detail.className = 'row-detail';
+
+        const h2t = document.createElement('div');
+        h2t.className = 'section-heading';
+        h2t.textContent = 'Transcription';
+        const transcriptionP = document.createElement('p');
+        transcriptionP.className = 'transcription-text';
+        transcriptionP.textContent = r.transcription || '(empty)';
+
+        const h2e = document.createElement('div');
+        h2e.className = 'section-heading';
+        h2e.textContent = 'Extracted';
+        const kvGrid = document.createElement('div');
+        try {
+            renderKV(JSON.parse(r.extractedData || '{}'), kvGrid);
+        } catch {
+            kvGrid.textContent = r.extractedData || '{}';
+        }
+
+        detail.appendChild(h2t);
+        detail.appendChild(transcriptionP);
+
+        const actionRow = document.createElement('div');
+        actionRow.className = 'action-row';
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'action-btn';
+        copyBtn.textContent = 'Copy text';
+        copyBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            try { await navigator.clipboard.writeText(r.transcription || ''); await flashBtn(copyBtn, 'Copied!'); }
+            catch { await flashBtn(copyBtn, 'Failed'); }
+        });
+
+        const dlBtn = document.createElement('button');
+        dlBtn.className = 'action-btn';
+        dlBtn.textContent = 'Download audio';
+        dlBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            try { await downloadAudio(r.id, r.originalFilename); }
+            catch { await flashBtn(dlBtn, 'Error'); }
+        });
+
+        actionRow.appendChild(copyBtn);
+        actionRow.appendChild(dlBtn);
+        detail.appendChild(actionRow);
+
+        detail.appendChild(h2e);
+        detail.appendChild(kvGrid);
+
+        header.addEventListener('click', (e) => {
+            if (e.target === deleteBtn) return;
+            detail.classList.toggle('open');
+        });
+
+        deleteBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const id = deleteBtn.dataset.id;
+            try {
+                const res = await fetch(`/api/recordings/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Delete failed: ' + res.status);
+                allRecordings = allRecordings.filter(rec => String(rec.id) !== id);
+                const q = document.getElementById('search').value.toLowerCase();
+                render(allRecordings.filter(r => (r.transcription || '').toLowerCase().includes(q)));
+            } catch (err) {
+                alert('Could not delete recording: ' + err.message);
+            }
+        });
+
+        row.appendChild(header);
+        row.appendChild(detail);
+        return row;
+    }
+
+    function showEmpty() {
+        document.getElementById('list').innerHTML = '<div class="empty">No recordings yet.</div>';
+    }
+
+    function render(recordings) {
+        const list = document.getElementById('list');
+        list.innerHTML = '';
+        if (!recordings.length) { showEmpty(); return; }
+        recordings.forEach(r => list.appendChild(buildRow(r)));
+    }
+
+    document.getElementById('search').addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        render(allRecordings.filter(r => (r.transcription || '').toLowerCase().includes(q)));
+    });
+
+    async function load() {
+        try {
+            const res = await fetch('/api/recordings');
+            if (!res.ok) throw new Error('Server error: ' + res.status);
+            allRecordings = await res.json();
+            allRecordings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            render(allRecordings);
+        } catch (err) {
+            document.getElementById('list').innerHTML = '<div class="load-error">Could not load recordings.</div>';
+        }
+    }
+
+    load();
+</script>
+</body>
+</html>

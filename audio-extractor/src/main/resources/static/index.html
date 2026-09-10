@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Vezilka</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, sans-serif;
+            background: #F5F0E8;
+            color: #1A1A1A;
+            min-height: 100vh;
+            padding: 0 40px 48px;
+            max-width: 960px;
+            margin: 0 auto;
+        }
+        .top-strip {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 20px 0 16px;
+            border-bottom: 1px solid #DDD8CC;
+        }
+        .wordmark {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 0.8rem;
+            font-variant: small-caps;
+            letter-spacing: 0.22em;
+            color: #1A1A1A;
+        }
+        .nav-link { font-size: 0.8rem; color: #1B3F8B; text-decoration: none; }
+        .nav-link:hover { text-decoration: underline; }
+        .two-col { display: flex; min-height: calc(100vh - 60px); }
+        .left-col {
+            flex: 0 0 52%;
+            padding: 40px 32px 40px 0;
+            border-right: 1px solid #DDD8CC;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .right-col {
+            flex: 1;
+            padding: 40px 0 40px 32px;
+            display: flex;
+            flex-direction: column;
+        }
+        .big-num {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 5rem;
+            font-weight: 900;
+            color: #EAE4D8;
+            line-height: 1;
+            margin-bottom: -20px;
+            letter-spacing: -3px;
+            user-select: none;
+        }
+        #stateLabel {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: 2rem;
+            font-weight: 400;
+            color: #1A1A1A;
+        }
+        .level-track { width: 100%; height: 1px; position: relative; }
+        #levelBar { height: 1px; width: 0%; background: #1B3F8B; position: absolute; top: 0; left: 0; }
+        #recordBtn {
+            display: inline-block;
+            padding: 10px 28px;
+            font-family: system-ui, sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            border: 1.5px solid #1B3F8B;
+            color: #1B3F8B;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 0;
+            align-self: flex-start;
+        }
+        #recordBtn.recording { border-color: #1A1A1A; color: #1A1A1A; }
+        #recordBtn:disabled { border-color: #9A9A9A; color: #9A9A9A; cursor: not-allowed; }
+        .error-msg { font-size: 0.82rem; color: #C0392B; font-family: system-ui; }
+        .sec-label {
+            font-size: 0.6rem;
+            font-variant: small-caps;
+            letter-spacing: 0.15em;
+            color: #9A9A9A;
+            font-family: system-ui;
+            margin-bottom: 8px;
+        }
+        .r-divider { width: 100%; height: 1px; background: #DDD8CC; margin: 12px 0; }
+        .last-date { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.65rem; color: #9A9A9A; margin-bottom: 6px; }
+        .last-text { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.7rem; color: #4A4A4A; line-height: 1.7; margin-bottom: 10px; }
+        .kv-pair { display: flex; gap: 8px; font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.65rem; line-height: 1.7; }
+        .kv-key { color: #9A9A9A; flex-shrink: 0; }
+        .kv-sep { color: #9A9A9A; }
+        .kv-val { color: #1A1A1A; word-break: break-word; }
+        .view-all { margin-top: auto; font-size: 0.75rem; color: #1B3F8B; text-decoration: none; }
+        .view-all:hover { text-decoration: underline; }
+        .no-recordings { color: #9A9A9A; font-family: 'Playfair Display', Georgia, serif; font-size: 0.9rem; margin-top: 40px; }
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.6rem;
+            font-variant: small-caps;
+            letter-spacing: 0.12em;
+            color: #1B3F8B;
+            font-family: system-ui;
+            margin-bottom: 10px;
+        }
+        .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #1B3F8B; animation: blink 1s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+        #liveText { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.78rem; line-height: 1.8; color: #4A4A4A; flex: 1; }
+        .interim-text { color: #9A9A9A; border-bottom: 1px solid #DDD8CC; }
+        .cursor { display: inline-block; width: 1px; height: 0.85em; background: #1B3F8B; margin-left: 2px; vertical-align: middle; animation: blink 1s infinite; }
+        .processing-text { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.78rem; color: #9A9A9A; margin-top: 40px; }
+        .result-text { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.75rem; color: #4A4A4A; line-height: 1.7; margin-bottom: 10px; }
+        .action-row { display: flex; gap: 8px; margin-bottom: 10px; }
+        .action-btn {
+            font-size: 0.65rem;
+            font-family: system-ui;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            color: #1B3F8B;
+            border: 1px solid #1B3F8B;
+            padding: 5px 12px;
+            cursor: pointer;
+            background: transparent;
+            border-radius: 0;
+        }
+        .action-btn:hover { background: #1B3F8B; color: #F5F0E8; }
+        .action-btn:disabled { border-color: #9A9A9A; color: #9A9A9A; cursor: not-allowed; background: transparent; }
+        .prev-label { font-size: 0.55rem; font-variant: small-caps; letter-spacing: 0.12em; color: #C0BBAF; font-family: system-ui; margin-bottom: 4px; }
+        .prev-text { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.65rem; color: #C0BBAF; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div class="top-strip">
+        <div class="wordmark">Vezilka</div>
+        <a href="/history.html" class="nav-link">History →</a>
+    </div>
+
+    <div class="two-col">
+        <div class="left-col">
+            <div id="bigNum" class="big-num">01</div>
+            <div id="stateLabel">Ready</div>
+            <div class="level-track"><div id="levelBar"></div></div>
+            <button id="recordBtn">[ REC ]</button>
+            <p id="apiError" class="error-msg" style="display:none"></p>
+        </div>
+
+        <div class="right-col">
+            <div id="panelIdle" style="display:flex;flex-direction:column;height:100%"></div>
+
+            <div id="panelRecording" style="display:none;flex-direction:column">
+                <div class="live-badge"><div class="live-dot"></div>Live</div>
+                <div id="liveText"><span class="cursor"></span></div>
+            </div>
+
+            <div id="panelProcessing" style="display:none;flex-direction:column">
+                <div class="processing-text">Processing...</div>
+            </div>
+
+            <div id="panelDone" style="display:none;flex-direction:column">
+                <div class="sec-label">Transcription</div>
+                <div id="resultText" class="result-text"></div>
+                <div class="action-row">
+                    <button id="copyBtn" class="action-btn">Copy text</button>
+                    <button id="downloadBtn" class="action-btn">Download audio</button>
+                </div>
+                <div class="r-divider"></div>
+                <div class="sec-label">Extracted</div>
+                <div id="kvGrid"></div>
+                <div id="prevSection" style="display:none;margin-top:auto">
+                    <div class="r-divider"></div>
+                    <div class="prev-label">Previous</div>
+                    <div id="prevText" class="prev-text"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const btn = document.getElementById('recordBtn');
+        const stateLabel = document.getElementById('stateLabel');
+        const levelBar = document.getElementById('levelBar');
+        const apiError = document.getElementById('apiError');
+        const bigNum = document.getElementById('bigNum');
+        const panelIdle = document.getElementById('panelIdle');
+        const panelRecording = document.getElementById('panelRecording');
+        const panelProcessing = document.getElementById('panelProcessing');
+        const panelDone = document.getElementById('panelDone');
+
+        let mediaRecorder, chunks = [], audioCtx, analyser, animFrame;
+        let recognition = null;
+        let finalTranscript = '';
+        let lastRecording = null;
+
+        // Counter
+        let recCount = parseInt(localStorage.getItem('vezilka_rec_count') || '1', 10);
+        bigNum.textContent = String(recCount).padStart(2, '0');
+
+        // Speech Recognition
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SR) {
+            recognition = new SR();
+            recognition.lang = 'mk-MK';
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.onresult = (event) => {
+                let interim = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript + ' ';
+                    else interim = event.results[i][0].transcript;
+                }
+                const liveText = document.getElementById('liveText');
+                liveText.innerHTML = '';
+                if (finalTranscript) {
+                    const f = document.createElement('span');
+                    f.textContent = finalTranscript;
+                    liveText.appendChild(f);
+                }
+                if (interim) {
+                    const it = document.createElement('span');
+                    it.className = 'interim-text';
+                    it.textContent = interim;
+                    liveText.appendChild(it);
+                }
+                const c = document.createElement('span');
+                c.className = 'cursor';
+                liveText.appendChild(c);
+            };
+        }
+
+        function showPanel(name) {
+            [panelIdle, panelRecording, panelProcessing, panelDone].forEach(p => p.style.display = 'none');
+            const map = { idle: panelIdle, recording: panelRecording, processing: panelProcessing, done: panelDone };
+            map[name].style.display = 'flex';
+        }
+
+        function setState(state) {
+            const labels = { idle: 'Ready', recording: 'Recording', processing: 'Processing', done: 'Done' };
+            const btnLabels = { idle: '[ REC ]', recording: '[ STOP ]', processing: '[ ... ]', done: '[ REC ]' };
+            stateLabel.textContent = labels[state] || state;
+            stateLabel.style.color = state === 'recording' ? '#1B3F8B' : state === 'done' ? '#2a6a2a' : '#1A1A1A';
+            btn.disabled = state === 'processing';
+            btn.textContent = btnLabels[state] ?? '[ REC ]';
+            btn.classList.toggle('recording', state === 'recording');
+        }
+
+        function animateLevels() {
+            const data = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteTimeDomainData(data);
+            let sum = 0;
+            for (let i = 0; i < data.length; i++) sum += Math.abs(data[i] - 128);
+            levelBar.style.width = Math.min(100, (sum / data.length) * 6) + '%';
+            animFrame = requestAnimationFrame(animateLevels);
+        }
+
+        function stopLevelAnimation() {
+            cancelAnimationFrame(animFrame);
+            levelBar.style.width = '0%';
+        }
+
+        function renderKV(obj, parent) {
+            parent.innerHTML = '';
+            Object.entries(obj).forEach(([k, v]) => {
+                const pair = document.createElement('div');
+                pair.className = 'kv-pair';
+                const key = document.createElement('span'); key.className = 'kv-key'; key.textContent = k.replace(/_/g, ' ');
+                const sep = document.createElement('span'); sep.className = 'kv-sep'; sep.textContent = '—';
+                const val = document.createElement('span'); val.className = 'kv-val'; val.textContent = typeof v === 'object' ? JSON.stringify(v) : v;
+                pair.appendChild(key); pair.appendChild(sep); pair.appendChild(val);
+                parent.appendChild(pair);
+            });
+        }
+
+        function renderIdlePanel(rec) {
+            panelIdle.innerHTML = '';
+            if (!rec) {
+                const msg = document.createElement('div');
+                msg.className = 'no-recordings';
+                msg.textContent = 'No recordings yet.';
+                panelIdle.appendChild(msg);
+                return;
+            }
+            const lbl = document.createElement('div'); lbl.className = 'sec-label'; lbl.textContent = 'Last Recording';
+            const d = new Date(rec.createdAt);
+            const dateEl = document.createElement('div'); dateEl.className = 'last-date';
+            dateEl.textContent = isNaN(d) ? '\u2014' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' \u00b7 ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+            const textEl = document.createElement('div'); textEl.className = 'last-text';
+            textEl.textContent = (rec.transcription || '(empty)').slice(0, 200);
+            const div1 = document.createElement('div'); div1.className = 'r-divider';
+            const extLbl = document.createElement('div'); extLbl.className = 'sec-label'; extLbl.textContent = 'Extracted';
+            const kvWrap = document.createElement('div');
+            try { renderKV(JSON.parse(rec.extractedData || '{}'), kvWrap); } catch { kvWrap.textContent = '\u2014'; }
+            const link = document.createElement('a'); link.className = 'view-all'; link.href = '/history.html'; link.textContent = 'View all recordings \u2192';
+            [lbl, dateEl, textEl, div1, extLbl, kvWrap, link].forEach(el => panelIdle.appendChild(el));
+        }
+
+        async function flashBtn(b, text) {
+            const orig = b.textContent;
+            b.textContent = text;
+            b.disabled = true;
+            await new Promise(r => setTimeout(r, 1500));
+            b.textContent = orig;
+            b.disabled = false;
+        }
+
+        async function downloadAudio(id, filename) {
+            const res = await fetch('/api/recordings/' + id + '/audio');
+            if (!res.ok) throw new Error(res.status);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename || 'recording'; a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Load last recording on startup
+        (async () => {
+            try {
+                const res = await fetch('/api/recordings');
+                if (res.ok) {
+                    const all = await res.json();
+                    all.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    lastRecording = all[0] || null;
+                }
+            } catch {}
+            renderIdlePanel(lastRecording);
+        })();
+
+        btn.addEventListener('click', async () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                if (recognition) recognition.stop();
+                return;
+            }
+
+            chunks = [];
+            finalTranscript = '';
+            apiError.style.display = 'none';
+
+            let stream;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch {
+                setState('idle');
+                stateLabel.textContent = 'Permission denied';
+                stateLabel.style.color = '#C0392B';
+                return;
+            }
+
+            audioCtx = new AudioContext();
+            analyser = audioCtx.createAnalyser();
+            audioCtx.createMediaStreamSource(stream).connect(analyser);
+            animateLevels();
+
+            if (recognition) {
+                recognition.onerror = (e) => {
+                    if (e.error === 'not-allowed') return;
+                };
+                try { recognition.start(); } catch (e) { /* InvalidStateError if already started */ }
+            } else {
+                document.getElementById('liveText').innerHTML = '<span style="color:#C0BBAF">Listening\u2026</span><span class="cursor"></span>';
+            }
+
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.ondataavailable = e => chunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                stopLevelAnimation();
+                stream.getTracks().forEach(t => t.stop());
+                audioCtx.close();
+                setState('processing');
+                showPanel('processing');
+
+                const blob = new Blob(chunks, { type: 'audio/webm' });
+                const formData = new FormData();
+                formData.append('file', blob, 'recording.webm');
+
+                try {
+                    const res = await fetch('/api/recordings', { method: 'POST', body: formData });
+                    if (!res.ok) throw new Error('Server error ' + res.status);
+                    const data = await res.json();
+
+                    recCount++;
+                    localStorage.setItem('vezilka_rec_count', recCount);
+                    bigNum.textContent = String(recCount).padStart(2, '0');
+
+                    document.getElementById('resultText').textContent = data.transcription || '(empty)';
+                    const kvGrid = document.getElementById('kvGrid');
+                    try { renderKV(JSON.parse(data.extractedData || '{}'), kvGrid); }
+                    catch { kvGrid.textContent = data.extractedData || '{}'; }
+
+                    if (lastRecording) {
+                        document.getElementById('prevText').textContent = (lastRecording.transcription || '').slice(0, 120) || '(empty)';
+                        document.getElementById('prevSection').style.display = 'block';
+                    }
+
+                    const copyBtn = document.getElementById('copyBtn');
+                    copyBtn.onclick = async () => {
+                        try { await navigator.clipboard.writeText(data.transcription || ''); await flashBtn(copyBtn, 'Copied!'); }
+                        catch { await flashBtn(copyBtn, 'Failed'); }
+                    };
+
+                    const downloadBtn = document.getElementById('downloadBtn');
+                    downloadBtn.onclick = async () => {
+                        try { await downloadAudio(data.id, data.originalFilename); }
+                        catch { await flashBtn(downloadBtn, 'Error'); }
+                    };
+
+                    lastRecording = data;
+                    setState('done');
+                    showPanel('done');
+                } catch (err) {
+                    setState('idle');
+                    showPanel('idle');
+                    apiError.textContent = err.message;
+                    apiError.style.display = 'block';
+                }
+            };
+
+            mediaRecorder.start();
+            setState('recording');
+            showPanel('recording');
+        });
+    </script>
+</body>
+</html>
