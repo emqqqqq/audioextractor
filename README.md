@@ -1,93 +1,151 @@
-# audioextractor
+# Audio Extractor (Vezilka)
 
+Веб-апликација која снима/прима аудио запис на македонски јазик, го транскрибира со Whisper (преку Groq), а потоа со LLM (Llama преку Groq) автоматски извлекува структурирани податоци (имиња, датуми, ставки, количини, цени, локации, теми, клучни факти) и кратко резиме од содржината.
 
+Наменета е за брзо архивирање на говорни белешки, состаноци, потсетувања и слично — снимката се претвора во пребарливи, структурирани податоци наместо да остане само аудио фајл.
 
-## Getting started
+---
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Технологии
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+**Frontend**
+- React 19 + Vite
+- JavaScript / TypeScript (мешано)
+- Tailwind CSS
+- Framer Motion (анимации)
+- Axios / Fetch API за комуникација со бекендот
+- Lucide React (икони)
 
-## Add your files
+**Backend**
+- Spring Boot 3 (Java)
+- Spring Web (REST API)
+- Spring Data JPA / Hibernate
+- PostgreSQL (JSONB колона за извлечените ентитети)
+- Lombok
+- Groq API — Whisper `whisper-large-v3` за транскрипција и `llama-3.3-70b-versatile` за екстракција на ентитети
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+---
+
+## Клучни функционалности
+
+- **Upload / снимање аудио** — праќање на аудио фајл (или веб-снимка) до бекендот
+- **Транскрипција** — ако не постои веќе транскрипт од браузерот, бекендот праќа аудио до Groq Whisper (`language=mk`) и добива текст
+- **Автоматска екстракција на ентитети** — LLM (Groq Llama) го анализира транскриптот и враќа структуриран JSON: имиња на лица, датуми, ставки, количини, цени, локации, теми и клучни факти, плус кратко резиме на македонски
+- **Речник (Vocabulary)** — листа на домен-специфични зборови што се проследуваат до LLM-то како помош при екстракцијата (CRUD преку `/api/vocabulary`)
+- **Историја на снимки** — преглед, преименување, уредување на транскрипт/податоци и бришење снимки
+- **Преземање на оригиналното аудио** за секоја снимка
+- **Dashboard / History страници** во React за преглед на резултатите
+
+---
+
+## Архитектура
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.finki.ukim.mk/wp/audioextractor.git
-git branch -M main
-git push -uf origin main
+audioextractor/
+├── audio-extractor/          # Spring Boot backend
+│   └── src/main/java/mk/finki/vp/audio_extractor/
+│       ├── controller/        # RecordingController, VocabularyController
+│       ├── service/           # RecordingService, TranscriptionService, ExtractionService
+│       ├── entity/            # Recording, VocabularyWord
+│       ├── repository/        # Spring Data JPA repositories
+│       └── config/            # CorsConfig
+└── frontend/                  # React + Vite frontend
+    └── src/
+        ├── pages/
+        │   ├── Landing.jsx      # почетна страница (лого, features, orb, тема) — активна
+        │   ├── Upload.jsx       # upload/drag&drop на аудио
+        │   ├── Dashboard.jsx    # преглед на податоци
+        │   ├── History.jsx      # историја на снимки
+        │   └── Onboarding.jsx   # алтернативен welcome екран — постои во кодот, но не е поврзан во App.jsx
+        ├── components/         # Sidebar, UI компоненти
+        └── api/                # api.js — Axios клиент
 ```
 
-## Integrate with your tools
+> `App.jsx` рутира само меѓу `landing`, `upload`, `dashboard` и `history`. `Onboarding.jsx` останува во репозиториумот како неповрзана компонента — не се вчитува никаде во тековниот тек на апликацијата.
 
-- [ ] [Set up project integrations](https://gitlab.finki.ukim.mk/wp/audioextractor/-/settings/integrations)
+### API (Spring Boot, `/api`)
 
-## Collaborate with your team
+| Метод | Рута | Опис |
+|---|---|---|
+| POST | `/api/recordings` | Прими аудио фајл (+ опционален транскрипт), транскрибирај и екстрактирај податоци |
+| GET | `/api/recordings` | Листа на сите снимки |
+| GET | `/api/recordings/{id}` | Детали за една снимка |
+| GET | `/api/recordings/{id}/audio` | Преземи го оригиналното аудио |
+| PATCH | `/api/recordings/{id}/name` | Промени име на снимка |
+| PATCH | `/api/recordings/{id}` | Ажурирај транскрипт/извлечени податоци |
+| DELETE | `/api/recordings/{id}` | Избриши снимка (и фајлот на диск) |
+| GET | `/api/vocabulary` | Листа на зборови од речникот |
+| POST | `/api/vocabulary` | Додади збор |
+| DELETE | `/api/vocabulary/{id}` | Избриши збор |
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+---
 
-## Test and Deploy
+## ⚠️ Задолжителна конфигурација пред стартување
 
-Use the built-in continuous integration in GitLab.
+`application.properties` е во `.gitignore` и **не постои во репозиториумот**. Без него бекендот нема да стартува — Spring Boot ќе фрли грешка при стартување бидејќи нема конфигурирана база (`spring.datasource.url`) и нема Groq клуч (`groq.api.key` нема default вредност во кодот).
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+**Чекори:**
 
-***
+1. Копирај го `application.properties.example` во `audio-extractor/src/main/resources/application.properties`
+2. Пополни ги вредностите (база + Groq клуч)
+3. Дури тогаш стартувај го бекендот / `run.bat`
 
-# Editing this README
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/audio_extractor
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+spring.datasource.driver-class-name=org.postgresql.Driver
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
-## Suggestions for a good README
+groq.api.key=YOUR_GROQ_API_KEY
+```
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+Groq API клуч (бесплатен) се зема од [console.groq.com](https://console.groq.com).
 
-## Name
-Choose a self-explaining name for your project.
+> **Напомена за `run.bat`:** ако `application.properties` не е конфигуриран, Spring Boot паѓа веднаш при стартување и портата `:8080` никогаш нема да стане активна. 
+---
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+## Инсталација и стартување
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### Предуслови
+- Java 21+ и Maven (или `mvnw` во репозиториумот)
+- Node.js и npm
+- PostgreSQL (база `audio_extractor`)
+- Groq API клуч ([console.groq.com](https://console.groq.com))
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+### Backend
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+```bash
+cd audio-extractor
+```
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+Провери дека `application.properties` е конфигуриран (види секција погоре), потоа стартувај:
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+```bash
+./mvnw spring-boot:run
+```
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+Бекендот тргнува на `http://localhost:8080`.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+### Frontend
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+Фронтендот тргнува на `http://localhost:5173` (Vite dev server со proxy до `/api`).
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+### Брз старт (Windows)
 
-## License
-For open source projects, say how it is licensed.
+Во главниот директориум има `run.bat` кој автоматски:
+1. Проверува/стартува PostgreSQL
+2. Стартува Spring Boot бекендот на `:8080`
+3. Стартува Vite фронтендот на `:5173`
+4. Го отвора `http://localhost:5173` во browser
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+> `run.bat` **не** креира `application.properties` наместо тебе — тоа мора да е веќе поставено претходно (види секцијата за конфигурација погоре)

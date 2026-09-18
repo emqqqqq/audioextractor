@@ -1,0 +1,15 @@
+# Копирај го овој фајл како application.properties во истиот директориум
+# (audio-extractor/src/main/resources/) и пополни ги вредностите.
+# application.properties е во .gitignore и НЕ смее да се commit-ира со реални вредности.
+
+spring.datasource.url=jdbc:postgresql://localhost:5432/audio_extractor
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# Groq API клуч — земи го бесплатно на https://console.groq.com
+groq.api.key=YOUR_GROQ_API_KEY
