@@ -1,44 +1,38 @@
 # Audio Extractor (Vezilka)
 
-Веб-апликација која снима/прима аудио запис на македонски јазик, го транскрибира со Whisper (преку Groq), а потоа со LLM (Llama преку Groq) автоматски извлекува структурирани податоци (имиња, датуми, ставки, количини, цени, локации, теми, клучни факти) и кратко резиме од содржината.
+A web application that records/receives an audio recording in Macedonian, transcribes it with Whisper (via Groq), and then uses an LLM (Llama via Groq) to automatically extract structured data (names, dates, items, quantities, prices, locations, topics, key facts) along with a short summary of the content.
 
-Наменета е за брзо архивирање на говорни белешки, состаноци, потсетувања и слично — снимката се претвора во пребарливи, структурирани податоци наместо да остане само аудио фајл.
+It's designed for quickly archiving voice notes, meetings, reminders, and similar content — the recording gets converted into searchable, structured data instead of remaining just an audio file.
 
----
-
-## Технологии
+## Technologies
 
 **Frontend**
 - React 19 + Vite
-- JavaScript / TypeScript (мешано)
+- JavaScript / TypeScript (mixed)
 - Tailwind CSS
-- Framer Motion (анимации)
-- Axios / Fetch API за комуникација со бекендот
-- Lucide React (икони)
+- Framer Motion (animations)
+- Axios / Fetch API for backend communication
+- Lucide React (icons)
 
 **Backend**
 - Spring Boot 3 (Java)
 - Spring Web (REST API)
 - Spring Data JPA / Hibernate
-- PostgreSQL (JSONB колона за извлечените ентитети)
+- PostgreSQL (JSONB column for extracted entities)
 - Lombok
-- Groq API — Whisper `whisper-large-v3` за транскрипција и `llama-3.3-70b-versatile` за екстракција на ентитети
+- Groq API — Whisper `whisper-large-v3` for transcription and `llama-3.3-70b-versatile` for entity extraction
 
----
+## Key Features
 
-## Клучни функционалности
+- **Upload / record audio** — send an audio file (or browser recording) to the backend
+- **Transcription** — if a transcript from the browser doesn't already exist, the backend sends the audio to Groq Whisper (language=mk) and receives text
+- **Automatic entity extraction** — an LLM (Groq Llama) analyzes the transcript and returns structured JSON: names, dates, items, quantities, prices, locations, topics, and key facts, plus a short summary in Macedonian
+- **Vocabulary** — a list of domain-specific words passed to the LLM to assist with extraction (CRUD via `/api/vocabulary`)
+- **Recording history** — view, rename, edit transcript/data, and delete recordings
+- **Download** the original audio for each recording
+- **Dashboard / History** pages in React for reviewing results
 
-- **Upload / снимање аудио** — праќање на аудио фајл (или веб-снимка) до бекендот
-- **Транскрипција** — ако не постои веќе транскрипт од браузерот, бекендот праќа аудио до Groq Whisper (`language=mk`) и добива текст
-- **Автоматска екстракција на ентитети** — LLM (Groq Llama) го анализира транскриптот и враќа структуриран JSON: имиња на лица, датуми, ставки, количини, цени, локации, теми и клучни факти, плус кратко резиме на македонски
-- **Речник (Vocabulary)** — листа на домен-специфични зборови што се проследуваат до LLM-то како помош при екстракцијата (CRUD преку `/api/vocabulary`)
-- **Историја на снимки** — преглед, преименување, уредување на транскрипт/податоци и бришење снимки
-- **Преземање на оригиналното аудио** за секоја снимка
-- **Dashboard / History страници** во React за преглед на резултатите
-
----
-
-## Архитектура
+## Architecture
 
 ```
 audioextractor/
@@ -52,43 +46,41 @@ audioextractor/
 └── frontend/                  # React + Vite frontend
     └── src/
         ├── pages/
-        │   ├── Landing.jsx      # почетна страница (лого, features, orb, тема) — активна
-        │   ├── Upload.jsx       # upload/drag&drop на аудио
-        │   ├── Dashboard.jsx    # преглед на податоци
-        │   ├── History.jsx      # историја на снимки
-        │   └── Onboarding.jsx   # алтернативен welcome екран — постои во кодот, но не е поврзан во App.jsx
-        ├── components/         # Sidebar, UI компоненти
-        └── api/                # api.js — Axios клиент
+        │   ├── Landing.jsx      # homepage (logo, features, orb, theme) — active
+        │   ├── Upload.jsx       # audio upload/drag&drop
+        │   ├── Dashboard.jsx    # data overview
+        │   ├── History.jsx      # recording history
+        │   └── Onboarding.jsx   # alternative welcome screen — exists in the code, but not wired into App.jsx
+        ├── components/         # Sidebar, UI components
+        └── api/                # api.js — Axios client
 ```
 
-> `App.jsx` рутира само меѓу `landing`, `upload`, `dashboard` и `history`. `Onboarding.jsx` останува во репозиториумот како неповрзана компонента — не се вчитува никаде во тековниот тек на апликацијата.
+`App.jsx` only routes between landing, upload, dashboard, and history. `Onboarding.jsx` remains in the repository as an unconnected component — it isn't loaded anywhere in the current app flow.
 
-### API (Spring Boot, `/api`)
+## API (Spring Boot, `/api`)
 
-| Метод | Рута | Опис |
+| Method | Route | Description |
 |---|---|---|
-| POST | `/api/recordings` | Прими аудио фајл (+ опционален транскрипт), транскрибирај и екстрактирај податоци |
-| GET | `/api/recordings` | Листа на сите снимки |
-| GET | `/api/recordings/{id}` | Детали за една снимка |
-| GET | `/api/recordings/{id}/audio` | Преземи го оригиналното аудио |
-| PATCH | `/api/recordings/{id}/name` | Промени име на снимка |
-| PATCH | `/api/recordings/{id}` | Ажурирај транскрипт/извлечени податоци |
-| DELETE | `/api/recordings/{id}` | Избриши снимка (и фајлот на диск) |
-| GET | `/api/vocabulary` | Листа на зборови од речникот |
-| POST | `/api/vocabulary` | Додади збор |
-| DELETE | `/api/vocabulary/{id}` | Избриши збор |
+| POST | `/api/recordings` | Receive an audio file (+ optional transcript), transcribe and extract data |
+| GET | `/api/recordings` | List all recordings |
+| GET | `/api/recordings/{id}` | Details for a single recording |
+| GET | `/api/recordings/{id}/audio` | Download the original audio |
+| PATCH | `/api/recordings/{id}/name` | Rename a recording |
+| PATCH | `/api/recordings/{id}` | Update transcript/extracted data |
+| DELETE | `/api/recordings/{id}` | Delete a recording (and the file on disk) |
+| GET | `/api/vocabulary` | List vocabulary words |
+| POST | `/api/vocabulary` | Add a word |
+| DELETE | `/api/vocabulary/{id}` | Delete a word |
 
----
+## ⚠️ Required Configuration Before Startup
 
-## ⚠️ Задолжителна конфигурација пред стартување
+`application.properties` is in `.gitignore` and does not exist in the repository. Without it, the backend won't start — Spring Boot will throw an error on startup because there's no configured database (`spring.datasource.url`) and no Groq key (`groq.api.key` has no default value in the code).
 
-`application.properties` е во `.gitignore` и **не постои во репозиториумот**. Без него бекендот нема да стартува — Spring Boot ќе фрли грешка при стартување бидејќи нема конфигурирана база (`spring.datasource.url`) и нема Groq клуч (`groq.api.key` нема default вредност во кодот).
+**Steps:**
 
-**Чекори:**
-
-1. Копирај го `application.properties.example` во `audio-extractor/src/main/resources/application.properties`
-2. Пополни ги вредностите (база + Groq клуч)
-3. Дури тогаш стартувај го бекендот / `run.bat`
+1. Copy `application.properties.example` to `audio-extractor/src/main/resources/application.properties`
+2. Fill in the values (database + Groq key)
+3. Only then start the backend / `run.bat`
 
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/audio_extractor
@@ -103,49 +95,50 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 groq.api.key=YOUR_GROQ_API_KEY
 ```
 
-Groq API клуч (бесплатен) се зема од [console.groq.com](https://console.groq.com).
+A (free) Groq API key can be obtained from console.groq.com.
 
-> **Напомена за `run.bat`:** ако `application.properties` не е конфигуриран, Spring Boot паѓа веднаш при стартување и портата `:8080` никогаш нема да стане активна. 
----
+**Note on `run.bat`:** if `application.properties` isn't configured, Spring Boot crashes immediately on startup and port `:8080` never becomes active.
 
-## Инсталација и стартување
+## Installation and Startup
 
-### Предуслови
-- Java 21+ и Maven (или `mvnw` во репозиториумот)
-- Node.js и npm
-- PostgreSQL (база `audio_extractor`)
-- Groq API клуч ([console.groq.com](https://console.groq.com))
+### Prerequisites
+
+- Java 21+ and Maven (or the `mvnw` included in the repository)
+- Node.js and npm
+- PostgreSQL (database `audio_extractor`)
+- Groq API key (console.groq.com)
 
 ### Backend
 
-```bash
+```
 cd audio-extractor
 ```
 
-Провери дека `application.properties` е конфигуриран (види секција погоре), потоа стартувај:
+Make sure `application.properties` is configured (see the section above), then start it:
 
-```bash
+```
 ./mvnw spring-boot:run
 ```
 
-Бекендот тргнува на `http://localhost:8080`.
+The backend runs at `http://localhost:8080`.
 
 ### Frontend
 
-```bash
+```
 cd frontend
 npm install
 npm run dev
 ```
 
-Фронтендот тргнува на `http://localhost:5173` (Vite dev server со proxy до `/api`).
+The frontend runs at `http://localhost:5173` (Vite dev server with a proxy to `/api`).
 
-### Брз старт (Windows)
+### Quick Start (Windows)
 
-Во главниот директориум има `run.bat` кој автоматски:
-1. Проверува/стартува PostgreSQL
-2. Стартува Spring Boot бекендот на `:8080`
-3. Стартува Vite фронтендот на `:5173`
-4. Го отвора `http://localhost:5173` во browser
+In the root directory there's a `run.bat` that automatically:
 
-> `run.bat` **не** креира `application.properties` наместо тебе — тоа мора да е веќе поставено претходно (види секцијата за конфигурација погоре)
+1. Checks/starts PostgreSQL
+2. Starts the Spring Boot backend on `:8080`
+3. Starts the Vite frontend on `:5173`
+4. Opens `http://localhost:5173` in the browser
+
+`run.bat` does not create `application.properties` for you — it must already be set up beforehand (see the configuration section above).
