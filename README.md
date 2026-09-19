@@ -101,6 +101,13 @@ A (free) Groq API key can be obtained from console.groq.com.
 
 ## Installation and Startup
 
+Clone the repository:
+
+```bash
+git clone https://github.com/emqqqqq/audioextractor
+cd audioextractor
+```
+
 ### Prerequisites
 
 - Java 21+ and Maven (or the `mvnw` included in the repository)
